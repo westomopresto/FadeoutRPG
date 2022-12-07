@@ -10,7 +10,7 @@
  *
  * Usage examples of this plugin:
  * - Trigger an attack on overkill, using overkill damage value to do more things.
- * - Add as a skill ID on an ability or weapon
+ * - Add <overkillSplash> tag to the note of a weapon, spell, or item to enable for said item.
  */
 
 /*:ja
@@ -24,10 +24,18 @@ console.log('Pandan Overkill Loaded');
 
 (function() {
 
-  //
-  // Game_Action
-  //
-  //Game_Action.OVERKILL_FLAG = true;
+  
+  var lastActionOverkill = false;
+  var ok_action;
+  var ok_target;
+  var ok_amount;
+  // globals
+
+  var rpgupdateAction = BattleManager.prototype.updateAction;
+  BattleManager.prototype.updateAction = function () {
+  console.log("updateAction took place here");
+  rpgupdateAction.call(this);
+  };
 
   overkillEffect = function(action, target, overkillamount){
     console.log(target);
@@ -35,25 +43,17 @@ console.log('Pandan Overkill Loaded');
     console.log(enemyName + overkillamount +'  overkill damage!'); 
     var modAction = action;
     var allTargets = action.makeTargets();
-    var dmg = overkillamount/allTargets.length-1;
+    //var dmg = overkillamount/allTargets.length-1;
     for (let i = 0; i < allTargets.length; i++)
     {
       t = allTargets[i];
       var dead = t.isDead();
       if(!dead && t != target)
       {
-        //modAction._item.object().
         modAction.apply(t);
-        var battlerName = t.battlerName();
-        SceneManager._scene._logWindow.addText(battlerName + ' took '+ dmg +' in overkill damage!')
-        if(t.hp <= 0){
-          t.die();
-          t.refresh();
-        }
       }
     }
   };
-
   //The only thing it cant do right now, is we cant modifiy the new spell with a custom damage value (based on previous overkill)
   // We can do direct HP damage though, which might work if we could clean up the actors after death
   
@@ -67,10 +67,15 @@ console.log('Pandan Overkill Loaded');
     if(note.includes("<overkillSplash>")){
       if(target.isEnemy() && (target.isDead())){
         var overkillamount = value - curHp;
-        overkillEffect(action, target, overkillamount);
+        if(overkillamount > 1){
+          ok_action = action; 
+          ok_target = target;
+          ok_amount = overkillamount;
+          console.log(target.battlerName() + ' was overkilled by '+ overkillamount + ' damage!');
+        } else {
+        }
       }
       SceneManager._scene._logWindow.addText(target.battlerName() + ' hp:'+target.hp);
-      console.log(target.battlerName() + ' hp:'+ target.hp);
     }
   };
 
